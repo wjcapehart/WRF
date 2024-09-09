@@ -46,7 +46,7 @@ SUBROUTINE calc_ts_locations( grid )
          
    !! wjc modification 2024-09-07 adding TE, SM, & ST output stream to list
    INTEGER, PARAMETER :: TS_FIELDS = 10
-   CHARACTER (LEN=2), DIMENSION(9) :: &
+   CHARACTER (LEN=2), DIMENSION(TS_FIELDS) :: &
       ts_file_endings = (/ 'UU', 'VV', 'PH', 'TH', 'QV', 'WW', 'PR', 'TE', 'SM', 'ST' /)
 
    !! INTEGER, PARAMETER :: TS_FIELDS = 7
