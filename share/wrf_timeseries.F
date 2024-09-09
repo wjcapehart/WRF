@@ -1083,7 +1083,7 @@ SUBROUTINE write_ts( grid )
          !!! wjc modification 2024-09-09 Using Ex.x Format for Profiles
          !!!               000000000111111111120000
          !!!               123456789012345678901234
-         profile_format = '(f13.6,1x,000(e17.8,1x))' 
+         profile_format = '(f13.6,2x,000(e17.8,2x))' 
          k= LEN_TRIM(profile_format)
          WRITE(profile_format(12:14),'(I3.3)') grid%max_ts_level ! insert number of layers
          !!! wjc end modification
