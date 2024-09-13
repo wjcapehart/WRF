@@ -2136,8 +2136,8 @@ OMPCC           =       # -qopenmp -auto
 SFC             =       ifx
 SCC             =       icx
 CCOMP           =       icx
-DM_FC           =       mpif90 -f90=$(SFC)
-DM_CC           =       mpicc -cc=$(SCC)
+DM_FC           =       mpiifx -f90=$(SFC)
+DM_CC           =       mpiicx -cc=$(SCC)
 FC              =       CONFIGURE_FC
 CC              =       CONFIGURE_CC
 LD              =       $(FC)
