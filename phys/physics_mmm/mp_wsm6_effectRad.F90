@@ -1,4 +1,4 @@
-!=================================================================================================================
+
  module mp_wsm6_effectrad
  use ccpp_kind_types,only: kind_phys
 
@@ -16,60 +16,60 @@
  contains
 
 
-!=================================================================================================================
-!>\section arg_table_mp_wsm6_effectRad_init
-!!\html\include mp_wsm6_effectRad_init.html
-!!
- subroutine mp_wsm6_effectRad_init(errmsg,errflg)
-!=================================================================================================================
 
-!output arguments:
+
+
+
+ subroutine mp_wsm6_effectRad_init(errmsg,errflg)
+
+
+
  character(len=*),intent(out):: errmsg
  integer,intent(out):: errflg
 
-!-----------------------------------------------------------------------------------------------------------------
+
 
  errmsg = 'mp_wsm6_effectRad_init OK'
  errflg = 0
 
  end subroutine mp_wsm6_effectRad_init
 
-!=================================================================================================================
-!>\section arg_table_mp_wsm6_effectRad_finalize
-!!\html\include mp_wsm6_effectRad_finalize.html
-!!
- subroutine mp_wsm6_effectRad_finalize(errmsg,errflg)
-!=================================================================================================================
 
-!output arguments:
+
+
+
+ subroutine mp_wsm6_effectRad_finalize(errmsg,errflg)
+
+
+
  character(len=*),intent(out):: errmsg
  integer,intent(out):: errflg
 
-!-----------------------------------------------------------------------------------------------------------------
+
 
  errmsg = 'mp_wsm6_effectRad_final OK'
  errflg = 0
 
  end subroutine mp_wsm6_effectRad_finalize
 
-!=================================================================================================================
-!>\section arg_table_mp_wsm6_effectRad_run
-!!\html\include mp_wsm6_effectRad_run.html
-!!
+
+
+
+
  subroutine mp_wsm6_effectRad_run(do_microp_re,t,qc,qi,qs,rho,qmin,t0c,re_qc_bg,re_qi_bg,re_qs_bg, &
                                   re_qc_max,re_qi_max,re_qs_max,re_qc,re_qi,re_qs,its,ite,kts,kte, &
                                   errmsg,errflg)
-!=================================================================================================================
-!  Compute radiation effective radii of cloud water, ice, and snow for
-!  single-moment microphysics.
-!  These are entirely consistent with microphysics assumptions, not
-!  constant or otherwise ad hoc as is internal to most radiation
-!  schemes.
-!  Coded and implemented by Soo ya Bae, KIAPS, January 2015.
-!-----------------------------------------------------------------------------------------------------------------
 
 
-!..Sub arguments
+
+
+
+
+
+
+
+
+
  logical,intent(in):: do_microp_re
  integer,intent(in):: its,ite,kts,kte
  real(kind=kind_phys),intent(in):: qmin
@@ -85,11 +85,11 @@
  real(kind=kind_phys),dimension(its:,:),intent(inout):: re_qi
  real(kind=kind_phys),dimension(its:,:),intent(inout):: re_qs
 
-!...Output arguments:
+
  character(len=*),intent(out):: errmsg
  integer,intent(out):: errflg
 
-!..Local variables
+
  integer:: i,k
  integer:: inu_c
  real(kind=kind_phys),dimension(its:ite,kts:kte):: ni
@@ -100,21 +100,21 @@
  real(kind=kind_phys):: temp
  real(kind=kind_phys):: lamdac
  real(kind=kind_phys):: supcol,n0sfac,lamdas
- real(kind=kind_phys):: diai      ! diameter of ice in m
+ real(kind=kind_phys):: diai      
  logical:: has_qc, has_qi, has_qs
-!..Minimum microphys values
+
  real(kind=kind_phys),parameter:: R1 = 1.E-12
  real(kind=kind_phys),parameter:: R2 = 1.E-6
-!..Mass power law relations:  mass = am*D**bm
+
  real(kind=kind_phys),parameter:: bm_r = 3.0
  real(kind=kind_phys),parameter:: obmr = 1.0/bm_r
  real(kind=kind_phys),parameter:: nc0  = 3.E8
 
-!-----------------------------------------------------------------------------------------------------------------
+
 
  if(.not. do_microp_re) return
 
-!--- initialization of effective radii of cloud water, cloud ice, and snow to background values:
+
  do k = kts,kte
    do i = its,ite
       re_qc(i,k) = re_qc_bg
@@ -123,24 +123,24 @@
    enddo
  enddo
 
-!--- computation of effective radii:
+
  has_qc = .false.
  has_qi = .false.
  has_qs = .false.
 
  do k = kts,kte
    do i = its,ite
-     ! for cloud
+     
      rqc(i,k) = max(R1,qc(i,k)*rho(i,k))
      if (rqc(i,k).gt.R1) has_qc = .true.
-     ! for ice
+     
      rqi(i,k) = max(R1,qi(i,k)*rho(i,k))
      temp = (rho(i,k)*max(qi(i,k),qmin))
      temp = sqrt(sqrt(temp*temp*temp))
      ni(i,k) = min(max(5.38e7*temp,1.e3),1.e6)
      rni(i,k)= max(R2,ni(i,k)*rho(i,k))
      if (rqi(i,k).gt.R1 .and. rni(i,k).gt.R2) has_qi = .true.
-     ! for snow
+     
      rqs(i,k) = max(R1,qs(i,k)*rho(i,k))
      if (rqs(i,k).gt.R1) has_qs = .true.
    enddo
@@ -178,7 +178,7 @@
    enddo
  endif
 
-!--- limit effective radii of cloud water, cloud ice, and snow to maximum values:
+
  do k = kts,kte
    do i = its,ite
       re_qc(i,k) = max(re_qc_bg,min(re_qc(i,k),re_qc_max))
@@ -192,6 +192,14 @@
 
  end subroutine mp_wsm6_effectRad_run
 
-!=================================================================================================================
+
  end module mp_wsm6_effectrad
-!=================================================================================================================
+
+
+
+
+
+
+
+
+
