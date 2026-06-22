@@ -39,9 +39,21 @@ SUBROUTINE calc_ts_locations( grid )
    CHARACTER (LEN=2), DIMENSION(TS_FIELDS) :: &
       ts_file_endings = (/ 'UU', 'VV', 'PH', 'TH', 'QV' ,'WW', 'PR', 'O3'/)
 #else
-   INTEGER, PARAMETER :: TS_FIELDS = 7
+
+   !! wjc modification 2024-09-07 adding TE, SM, & ST output stream to list
+   !!
+   INTEGER, PARAMETER :: TS_FIELDS = 10
    CHARACTER (LEN=2), DIMENSION(TS_FIELDS) :: &
-      ts_file_endings = (/ 'UU', 'VV', 'PH', 'TH', 'QV' ,'WW', 'PR'/) 
+      ts_file_endings = (/ 'UU', 'VV', 'PH', 'TH', 'QV', 'WW', 'PR', 'TE', 'SM', 'ST' /)
+   !!
+   !! wjc above code replaces the code below
+   !!
+   !! INTEGER, PARAMETER :: TS_FIELDS = 7
+   !! CHARACTER (LEN=2), DIMENSION(TS_FIELDS) :: &
+   !!   ts_file_endings = (/ 'UU', 'VV', 'PH', 'TH', 'QV' ,'WW', 'PR'/) 
+   !!
+   !!! wjc end modification 
+
 #endif
    INTEGER   ierr
    CHARACTER (len=19) simulation_start_date
@@ -451,19 +463,32 @@ SUBROUTINE calc_ts( grid )
 #if (EM_CORE == 1)
             !Create vertical profiles, from lowest model level up to desired level max_ts_level
             DO k=1,grid%max_ts_level
-            grid%ts_u_profile(n,i,k)   = earth_u_profile(k)
-            grid%ts_v_profile(n,i,k)   = earth_v_profile(k)
-            grid%ts_w_profile(n,i,k)   = (grid%w_2(ix,k,iy)+grid%w_2(ix,k+1,iy))/2.0 ! w on cell center
-            grid%ts_gph_profile(n,i,k) = 0.5*((grid%phb(ix,k,iy)+grid%ph_2(ix,k,iy)) &
-                                             +(grid%phb(ix,k+1,iy)+grid%ph_2(ix,k+1,iy)))/9.81 
-            IF (grid%use_theta_m == 1) THEN
-               grid%ts_th_profile(n,i,k)  = (grid%t_2(ix,k,iy) + T0)/(1.+R_v/R_d*grid%moist(ix,k,iy,P_QV))
-            ELSE
-               grid%ts_th_profile(n,i,k)  =  grid%t_2(ix,k,iy) + T0
-            END IF
-            grid%ts_qv_profile(n,i,k)  = grid%moist(ix,k,iy,P_QV)
-            grid%ts_p_profile(n,i,k)   = grid%pb(ix,k,iy)+grid%p(ix,k,iy)
+               grid%ts_u_profile(n,i,k)   = earth_u_profile(k)
+               grid%ts_v_profile(n,i,k)   = earth_v_profile(k)
+               grid%ts_w_profile(n,i,k)   = (grid%w_2(ix,k,iy)+grid%w_2(ix,k+1,iy))/2.0 ! w on cell center
+               grid%ts_gph_profile(n,i,k) = 0.5*((grid%phb(ix,k,iy)+grid%ph_2(ix,k,iy)) &
+                                                +(grid%phb(ix,k+1,iy)+grid%ph_2(ix,k+1,iy)))/9.81 
+               IF (grid%use_theta_m == 1) THEN
+                  grid%ts_th_profile(n,i,k)  = (grid%t_2(ix,k,iy) + T0)/(1.+R_v/R_d*grid%moist(ix,k,iy,P_QV))
+               ELSE
+                  grid%ts_th_profile(n,i,k)  =  grid%t_2(ix,k,iy) + T0
+               END IF
+               grid%ts_qv_profile(n,i,k)  = grid%moist(ix,k,iy,P_QV)
+               grid%ts_p_profile(n,i,k)   = grid%pb(ix,k,iy)+grid%p(ix,k,iy)
+   
+               !!! wjc modification 2024-09-07 Populating PBL Profile from variable tke_pbl
+               grid%ts_tke_profile(n,i,k) = grid%tke_pbl(ix,k,iy)
+               !!! wjc end modification 
+
             END DO
+
+            !!! wjc modification 2024-09-07, Populating SOILW and SOILT Profile from variable sh2o & tslb
+            DO k=1,grid%num_soil_layers
+               grid%ts_sh20_profile(n,i,k) = grid%sh2o(ix,k,iy)
+               grid%ts_tslb_profile(n,i,k) = grid%tslb(ix,k,iy)
+            END DO
+            !!! wjc end modification 
+
 #endif
 #if (WRF_CHEM == 1)
             DO k=1,grid%max_ts_level
@@ -552,14 +577,27 @@ SUBROUTINE calc_ts( grid )
       ELSE
 #if (EM_CORE == 1 )   
          DO k=1,grid%max_ts_level
-         grid%ts_u_profile(n,i,k)     = 1.E30
-         grid%ts_v_profile(n,i,k)     = 1.E30
-         grid%ts_w_profile(n,i,k)     = 1.E30 
-         grid%ts_gph_profile(n,i,k)   = 1.E30
-         grid%ts_th_profile(n,i,k)    = 1.E30
-         grid%ts_qv_profile(n,i,k)    = 1.E30
-         grid%ts_p_profile(n,i,k)     = 1.E30
+            grid%ts_u_profile(n,i,k)     = 1.E30
+            grid%ts_v_profile(n,i,k)     = 1.E30
+            grid%ts_w_profile(n,i,k)     = 1.E30 
+            grid%ts_gph_profile(n,i,k)   = 1.E30
+            grid%ts_th_profile(n,i,k)    = 1.E30
+            grid%ts_qv_profile(n,i,k)    = 1.E30
+            grid%ts_p_profile(n,i,k)     = 1.E30
+
+            !!! wjc modification 2024-09-07 creating _FillValue for ts_tke_profile
+            grid%ts_tke_profile(n,i,k)   = 1.E30
+            !!! wjc end modification 
+
          END DO
+
+         !!! wjc modification 2024-09-07, creating _FillValue for ts_sh20_profile & ts_tslb_profile
+         DO k=1,grid%num_soil_layers
+            grid%ts_sh20_profile(n,i,k) = 1.E30
+            grid%ts_tslb_profile(n,i,k) = 1.E30
+         END DO
+         !!! wjc end modification 
+
 #endif   
 #if (WRF_CHEM == 1)
          DO k=1,grid%max_ts_level
@@ -705,6 +743,32 @@ SUBROUTINE write_ts( grid )
    ts_buf(:,:) = grid%ts_p_profile(:,:,k)
    CALL wrf_dm_min_reals(ts_buf(:,:),grid%ts_p_profile(:,:,k),grid%ts_buf_size*grid%max_ts_locs)
    END DO
+
+
+
+
+   !!! wjc modification 2024-09-07 adding modification to accommodate ts_tke_profile profile
+   DO k=1,grid%max_ts_level
+      ts_buf(:,:) = grid%ts_tke_profile(:,:,k)
+      CALL wrf_dm_min_reals(ts_buf(:,:),grid%ts_tke_profile(:,:,k),grid%ts_buf_size*grid%max_ts_locs)
+   END DO
+   !!! wjc end modification 
+
+   !!! wjc modification 2024-09-07 adding modification to accommodate ts_sh20_profile profile
+   DO k=1,grid%num_soil_layers
+      ts_buf(:,:) = grid%ts_sh20_profile(:,:,k)
+      CALL wrf_dm_min_reals(ts_buf(:,:),grid%ts_sh20_profile(:,:,k),grid%ts_buf_size*grid%max_ts_locs)
+   END DO
+   !!! wjc end modification 
+
+   !!! wjc modification 2024-09-07 adding modification to accommodate ts_tslb_profile profile
+   DO k=1,grid%num_soil_layers
+      ts_buf(:,:) = grid%ts_tslb_profile(:,:,k)
+      CALL wrf_dm_min_reals(ts_buf(:,:),grid%ts_tslb_profile(:,:,k),grid%ts_buf_size*grid%max_ts_locs)
+   END DO
+   !!! wjc end modification 
+
+
 #endif         
 #if (WRF_CHEM == 1)
    DO k=1,grid%max_ts_level
@@ -978,9 +1042,22 @@ SUBROUTINE write_ts( grid )
          
          !Set write format for vertical profiles, depending on the highest model level of interest
 #if (EM_CORE == 1)   
-         profile_format = '(f13.6,1x,000(f13.5,1x))'
+
+         !!! wjc modification 2024-09-09 Using Ex.x Format for Profiles
+         !!!               000000000111111111120000
+         !!!               123456789012345678901234
+         profile_format = '(f13.6,2x,000(e17.8,2x))' 
          k= LEN_TRIM(profile_format)
-         WRITE(profile_format(12:14),'(I3.3)') grid%max_ts_level
+         WRITE(profile_format(12:14),'(I3.3)') grid%max_ts_level ! insert number of layers
+         !!!
+         !!! wjc above code replaces the code below
+         !!!
+         !!! profile_format = '(f13.6,1x,000(f13.5,1x))'
+         !!! k= LEN_TRIM(profile_format)
+         !!! WRITE(profile_format(12:14),'(I3.3)') grid%max_ts_level
+         !!!
+         !!! wjc end modification
+
 
          !Write u wind component profile to separate file
          iunit = get_unused_unit()
@@ -1114,6 +1191,73 @@ SUBROUTINE write_ts( grid )
                               grid%ts_p_profile(n,i,1:grid%max_ts_level)                                       
          END DO
          CLOSE(UNIT=iunit)
+
+
+
+         !!! wjc modification 2024-09-07 writing TKE output stream
+         !Write TKE profile to separate file
+         iunit = get_unused_unit()
+            IF ( iunit <= 0 ) THEN
+            CALL wrf_error_fatal('Error in write_ts: could not find a free Fortran unit.')
+            END IF
+         !Recreate filename for turbulent kinetic energy profiles
+         k = LEN_TRIM(ts_profile_filename)
+         WRITE(ts_profile_filename(k-1:k),'(A2)') 'TE'
+
+         OPEN(UNIT=iunit, FILE=TRIM(ts_profile_filename), STATUS='unknown', POSITION='append', FORM='formatted')!
+
+         DO n=1,grid%next_ts_time - 1
+
+            WRITE(UNIT=iunit,FMT=profile_format)  &
+                              grid%ts_hour(n,i),             &
+                              grid%ts_tke_profile(n,i,1:grid%max_ts_level)
+         END DO
+         CLOSE(UNIT=iunit)
+         !!! wjc end modification 
+
+         !!! wjc modification 2024-09-07 writing SH20 output stream
+         !Write SH20 profile to separate file
+         iunit = get_unused_unit()
+            IF ( iunit <= 0 ) THEN
+            CALL wrf_error_fatal('Error in write_ts: could not find a free Fortran unit.')
+            END IF
+         !Recreate filename for soil water content profiles
+         k = LEN_TRIM(ts_profile_filename)
+         WRITE(ts_profile_filename(k-1:k),'(A2)') 'SM'
+
+         OPEN(UNIT=iunit, FILE=TRIM(ts_profile_filename), STATUS='unknown', POSITION='append', FORM='formatted')!
+
+         DO n=1,grid%next_ts_time - 1
+
+            WRITE(UNIT=iunit,FMT=profile_format)  &
+                              grid%ts_hour(n,i),             &
+                              grid%ts_sh20_profile(n,i,1:grid%num_soil_layers)
+         END DO
+         CLOSE(UNIT=iunit)
+         !!! wjc end modification 
+
+         !!! wjc modification 2024-09-07 writing TSLB output stream
+         !Write SH20 profile to separate file
+         iunit = get_unused_unit()
+            IF ( iunit <= 0 ) THEN
+            CALL wrf_error_fatal('Error in write_ts: could not find a free Fortran unit.')
+            END IF
+         !Recreate filename for soil temperature profiles
+         k = LEN_TRIM(ts_profile_filename)
+         WRITE(ts_profile_filename(k-1:k),'(A2)') 'ST'
+
+         OPEN(UNIT=iunit, FILE=TRIM(ts_profile_filename), STATUS='unknown', POSITION='append', FORM='formatted')!
+
+         DO n=1,grid%next_ts_time - 1
+
+            WRITE(UNIT=iunit,FMT=profile_format)  &
+                              grid%ts_hour(n,i),             &
+                              grid%ts_tslb_profile(n,i,1:grid%num_soil_layers)
+         END DO
+         CLOSE(UNIT=iunit)
+         !!! wjc end modification 
+
+
 
 #endif   
 #if (WRF_CHEM == 1)
